@@ -77,11 +77,28 @@ export async function POST(req: Request) {
     userQuery,
     promptType,
   };
+  const setParam = (key: string, value: string | null) => {
+    if (!value) return;
+    if (Object.prototype.hasOwnProperty.call(parameters, key)) return;
+    parameters[key] = String(value);
+  };
   if (fileId) {
-    parameters.file_id = String(fileId);
+    setParam("file_id", String(fileId));
+    setParam("image", String(fileId));
+    setParam("image_file", String(fileId));
+    setParam("file", String(fileId));
   }
   if (fileUrl) {
-    parameters.file_url = String(fileUrl);
+    setParam("file_url", String(fileUrl));
+    setParam("image_url", String(fileUrl));
+    setParam("url", String(fileUrl));
+  }
+  if (userQuery) {
+    setParam("query", userQuery);
+    setParam("user_query", userQuery);
+  }
+  if (promptType) {
+    setParam("prompt_type", promptType);
   }
 
   const workflowResponse = await fetch(`${baseUrl}/v1/workflow/run`, {
@@ -134,8 +151,27 @@ export async function POST(req: Request) {
       }
       return null;
     };
+    const rawErrorText = JSON.stringify(workflowJson);
+    const missingParams = new Set<string>();
+    for (const match of rawErrorText.matchAll(/parameters?\.([a-zA-Z0-9_]+)/g)) {
+      missingParams.add(match[1]);
+    }
+    const listMatch = rawErrorText.match(
+      /missing required parameters?:?\s*([a-zA-Z0-9_,\s]+)/i,
+    );
+    if (listMatch?.[1]) {
+      listMatch[1]
+        .split(/[,\s]+/)
+        .map((value) => value.trim())
+        .filter(Boolean)
+        .forEach((value) => missingParams.add(value));
+    }
+    const missingText =
+      missingParams.size > 0
+        ? `缺少必填参数: ${Array.from(missingParams).join(", ")}`
+        : null;
     const errorMessage =
-      extractError(workflowJson) ?? "Workflow run failed";
+      missingText ?? extractError(workflowJson) ?? "Workflow run failed";
     return NextResponse.json(
       { error: errorMessage, details: workflowJson },
       { status: workflowResponse.status },
