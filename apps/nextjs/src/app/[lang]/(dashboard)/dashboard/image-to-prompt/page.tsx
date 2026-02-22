@@ -24,6 +24,7 @@ export default function ImageToPromptPage() {
   const [file, setFile] = React.useState<File | null>(null);
   const [userQuery, setUserQuery] = React.useState("");
   const [promptType, setPromptType] = React.useState("midjourney");
+  const [extraParameters, setExtraParameters] = React.useState("");
   const [result, setResult] = React.useState("");
   const [error, setError] = React.useState("");
   const [errorDetails, setErrorDetails] = React.useState("");
@@ -64,6 +65,9 @@ export default function ImageToPromptPage() {
       body.append("file", file);
       body.append("userQuery", userQuery);
       body.append("promptType", promptType);
+      if (extraParameters.trim()) {
+        body.append("extraParameters", extraParameters.trim());
+      }
 
       const response = await fetch("/api/image-to-prompt", {
         method: "POST",
@@ -165,6 +169,18 @@ export default function ImageToPromptPage() {
                     </SelectGroup>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="extra-params">extraParameters</Label>
+                <textarea
+                  id="extra-params"
+                  placeholder='{"image":"file_id","style":"cinematic"}'
+                  value={extraParameters}
+                  onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>
+                    setExtraParameters(event.target.value)
+                  }
+                  className="min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                />
               </div>
               <Button type="submit" disabled={!file || isLoading}>
                 {isLoading && (

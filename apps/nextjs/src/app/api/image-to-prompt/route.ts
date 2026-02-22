@@ -29,6 +29,28 @@ export async function POST(req: Request) {
     typeof formData.get("promptType") === "string"
       ? String(formData.get("promptType"))
       : "";
+  const extraParametersRaw =
+    typeof formData.get("extraParameters") === "string"
+      ? String(formData.get("extraParameters")).trim()
+      : "";
+  let extraParameters: Record<string, unknown> = {};
+  if (extraParametersRaw) {
+    try {
+      const parsed = JSON.parse(extraParametersRaw) as unknown;
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return NextResponse.json(
+          { error: "extraParameters 必须是 JSON 对象" },
+          { status: 400 },
+        );
+      }
+      extraParameters = parsed as Record<string, unknown>;
+    } catch {
+      return NextResponse.json(
+        { error: "extraParameters JSON 无效" },
+        { status: 400 },
+      );
+    }
+  }
   if (!allowedPromptTypes.includes(promptType)) {
     return NextResponse.json(
       {
@@ -73,7 +95,7 @@ export async function POST(req: Request) {
     uploadJson?.id ??
     null;
   const fileUrl = uploadJson?.data?.file_url ?? uploadJson?.file_url ?? null;
-  const parameters: Record<string, string> = {
+  const parameters: Record<string, unknown> = {
     userQuery,
     promptType,
   };
@@ -99,6 +121,11 @@ export async function POST(req: Request) {
   }
   if (promptType) {
     setParam("prompt_type", promptType);
+  }
+  if (Object.keys(extraParameters).length) {
+    for (const [key, value] of Object.entries(extraParameters)) {
+      parameters[key] = value;
+    }
   }
 
   const workflowResponse = await fetch(`${baseUrl}/v1/workflow/run`, {
