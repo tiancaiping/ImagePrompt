@@ -122,9 +122,37 @@ export async function POST(req: Request) {
   if (promptType) {
     setParam("prompt_type", promptType);
   }
+  const resolvePlaceholders = (value: unknown): unknown => {
+    if (typeof value === "string") {
+      let next = value;
+      if (fileId) {
+        next = next.replaceAll("{{file_id}}", String(fileId));
+        next = next.replaceAll("{file_id}", String(fileId));
+        next = next.replaceAll("$file_id", String(fileId));
+        if (next === "file_id") next = String(fileId);
+      }
+      if (fileUrl) {
+        next = next.replaceAll("{{file_url}}", String(fileUrl));
+        next = next.replaceAll("{file_url}", String(fileUrl));
+        next = next.replaceAll("$file_url", String(fileUrl));
+        if (next === "file_url") next = String(fileUrl);
+      }
+      return next;
+    }
+    if (Array.isArray(value)) {
+      return value.map((item) => resolvePlaceholders(item));
+    }
+    if (value && typeof value === "object") {
+      const entries = Object.entries(value as Record<string, unknown>).map(
+        ([key, entry]) => [key, resolvePlaceholders(entry)] as const,
+      );
+      return Object.fromEntries(entries);
+    }
+    return value;
+  };
   if (Object.keys(extraParameters).length) {
     for (const [key, value] of Object.entries(extraParameters)) {
-      parameters[key] = value;
+      parameters[key] = resolvePlaceholders(value);
     }
   }
 
