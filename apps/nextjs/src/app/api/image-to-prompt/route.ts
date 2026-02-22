@@ -115,6 +115,7 @@ export async function POST(req: Request) {
   if (fileId) {
     setParam("file_id", String(fileId));
     setParam("image", String(fileId));
+    setParam("img", String(fileId));
     setParam("image_file", String(fileId));
     setParam("file", String(fileId));
   }
