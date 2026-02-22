@@ -40,7 +40,7 @@ export default async function BillingPage({
     >
       <SubscriptionCard dict={dict.business.billing} />
 
-      <UsageCard />
+      <UsageCard dict={dict.business.billing} />
     </DashboardShell>
   );
 }
@@ -80,13 +80,42 @@ async function SubscriptionCard({ dict }: { dict: Record<string, string> }) {
   );
 }
 
-function UsageCard() {
+async function UsageCard({ dict }: { dict: Record<string, string> }) {
+  const clusters = await trpc.k8s.getClusters.query();
+  const total = clusters?.length ?? 0;
+  const running = clusters ? clusters.filter((cluster) => cluster.status === "RUNNING").length : 0;
+  const pending = clusters ? clusters.filter((cluster) => cluster.status === "PENDING").length : 0;
+  const stopped = clusters ? clusters.filter((cluster) => cluster.status === "STOPPED").length : 0;
+  const hasUsage = total > 0;
   return (
     <Card className="mt-4">
       <CardHeader>
-        <CardTitle>Usage</CardTitle>
+        <CardTitle>{dict.usage_title}</CardTitle>
       </CardHeader>
-      <CardContent>None</CardContent>
+      <CardContent>
+        {hasUsage ? (
+          <div className="grid gap-4 md:grid-cols-4">
+            <div className="rounded-md border border-border p-3">
+              <p className="text-sm text-muted-foreground">{dict.usage_total}</p>
+              <p className="text-2xl font-semibold">{total}</p>
+            </div>
+            <div className="rounded-md border border-border p-3">
+              <p className="text-sm text-muted-foreground">{dict.usage_running}</p>
+              <p className="text-2xl font-semibold">{running}</p>
+            </div>
+            <div className="rounded-md border border-border p-3">
+              <p className="text-sm text-muted-foreground">{dict.usage_pending}</p>
+              <p className="text-2xl font-semibold">{pending}</p>
+            </div>
+            <div className="rounded-md border border-border p-3">
+              <p className="text-sm text-muted-foreground">{dict.usage_stopped}</p>
+              <p className="text-2xl font-semibold">{stopped}</p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">{dict.usage_none}</p>
+        )}
+      </CardContent>
     </Card>
   );
 }

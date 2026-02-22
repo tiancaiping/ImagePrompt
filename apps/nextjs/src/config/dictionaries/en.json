@@ -22,6 +22,10 @@
     "introducing": "Introducing ImagePrompt",
     "title": "Turn images into production-ready prompts with ",
     "sub_title": "Upload an image, extract subject, style, lighting, and camera details, and generate clean prompts in seconds.",
+    "seo_title": "AI Image to Prompt Generator",
+    "seo_description": "Generate high-quality prompts from images with style, lighting, and composition details.",
+    "seo_keywords": "image to prompt, prompt generator, ai prompt, image prompt, stable diffusion prompt, midjourney prompt, prompt engineering",
+    "seo_blurb": "AI image-to-prompt platform for fast, consistent creative outputs.",
     "get_started": "Get Started",
     "view_on_github": "View Examples",
     "explore_product": "Start Generating",
@@ -85,7 +89,8 @@
     "signin_others": "Or continue with",
     "signup": "Sign up",
     "privacy": "only your email and profile picture will be stored.",
-    "signup_github": "Sign up with Email",
+    "signup_google": "Continue with Google",
+    "signup_github": "Continue with GitHub",
     "": ""
   },
   "common": {
@@ -115,6 +120,12 @@
       "subscriptionInfo": "You are currently on the <strong>{plan}</strong> plan.Your subscription will renew on <strong>{date}</strong>.",
       "manage_subscription": "Manage Subscription",
       "upgrade": "upgrade",
+      "usage_title": "Usage",
+      "usage_total": "Total clusters",
+      "usage_running": "Running",
+      "usage_pending": "Pending",
+      "usage_stopped": "Stopped",
+      "usage_none": "No usage yet",
       "": ""
     }
   },

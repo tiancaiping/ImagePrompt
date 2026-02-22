@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@saasfly/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@saasfly/ui/card";
 
 import { EmptyPlaceholder } from "~/components/empty-placeholder";
 import { DashboardHeader } from "~/components/header";
@@ -50,6 +51,10 @@ export default async function DashboardPage({
   if (result) {
     const clusters = result;
     const dict = await getDictionary(lang);
+    const usageDict = dict.business.billing;
+    const totalClusters = clusters.length;
+    const runningClusters = clusters.filter((cluster) => cluster.status === "RUNNING").length;
+    const pendingClusters = clusters.filter((cluster) => cluster.status === "PENDING").length;
     return (
       <DashboardShell>
         <DashboardHeader
@@ -58,7 +63,33 @@ export default async function DashboardPage({
         >
           <K8sCreateButton dict={dict.business} />
         </DashboardHeader>
-        <div>
+        <div className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardTitle>{usageDict.usage_total}</CardTitle>
+              </CardHeader>
+              <CardContent className="text-3xl font-semibold">
+                {totalClusters}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>{usageDict.usage_running}</CardTitle>
+              </CardHeader>
+              <CardContent className="text-3xl font-semibold">
+                {runningClusters}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>{usageDict.usage_pending}</CardTitle>
+              </CardHeader>
+              <CardContent className="text-3xl font-semibold">
+                {pendingClusters}
+              </CardContent>
+            </Card>
+          </div>
           {clusters.length ? (
             <div className="divide-y divide-border rounded-md border">
               <div className="flex items-center justify-between p-4">

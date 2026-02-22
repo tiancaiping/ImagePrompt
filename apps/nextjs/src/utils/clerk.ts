@@ -12,6 +12,8 @@ const noRedirectRoute = ["/api(.*)", "/trpc(.*)", "/admin"];
 
 export const isPublicRoute = createRouteMatcher([
   new RegExp("/(\\w{2}/)?signin(.*)"),
+  new RegExp("/(\\w{2}/)?login(.*)"),
+  new RegExp("/(\\w{2}/)?register(.*)"),
   new RegExp("/(\\w{2}/)?terms(.*)"),
   new RegExp("/(\\w{2}/)?privacy(.*)"),
   new RegExp("/(\\w{2}/)?docs(.*)"),

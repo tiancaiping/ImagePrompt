@@ -18,6 +18,8 @@
     "gen": "turbo gen --config 'turbo/generators/config.ts'"
   },
   "devDependencies": {
+    "@clerk/nextjs": "6.38.0",
+    "@manypkg/cli": "^0.25.1",
     "@turbo/gen": "1.13.3",
     "check-dependency-version-consistency": "4.1.0",
     "prettier": "3.2.5",
@@ -34,8 +36,5 @@
     "apps/*",
     "packages/*",
     "tooling/*"
-  ],
-  "dependencies": {
-    "@clerk/nextjs": "6.38.0"
-  }
+  ]
 }

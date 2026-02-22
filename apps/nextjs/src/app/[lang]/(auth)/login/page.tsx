@@ -6,7 +6,7 @@ import { cn } from "@saasfly/ui";
 import { buttonVariants } from "@saasfly/ui/button";
 import * as Icons from "@saasfly/ui/icons";
 
-import { UserAuthForm } from "~/components/user-auth-form";
+import { UserClerkAuthForm } from "~/components/user-clerk-auth-form";
 import type { Locale } from "~/config/i18n-config";
 import { getDictionary } from "~/lib/get-dictionary";
 
@@ -55,7 +55,7 @@ export default async function LoginPage({
             {dict.login.signin_title}
           </p>
         </div>
-        <UserAuthForm lang={lang} dict={dict.login} />
+        <UserClerkAuthForm lang={lang} dict={dict.login} />
         {/* <p className="px-8 text-center text-sm text-muted-foreground">
           <Link
             href={`/${lang}/register`}

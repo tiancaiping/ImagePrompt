@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { buttonVariants } from "@saasfly/ui/button";
@@ -9,7 +10,39 @@ import { Questions } from "~/components/questions";
 import { RightsideMarketing } from "~/components/rightside-marketing";
 import { VideoScroll } from "~/components/video-scroll";
 import type { Locale } from "~/config/i18n-config";
+import { siteConfig } from "~/config/site";
 import { getDictionary } from "~/lib/get-dictionary";
+
+export async function generateMetadata({
+  params: { lang },
+}: {
+  params: {
+    lang: Locale;
+  };
+}): Promise<Metadata> {
+  const dict = await getDictionary(lang);
+  const keywords = String(dict.marketing.seo_keywords)
+    .split(",")
+    .map((keyword) => keyword.trim())
+    .filter(Boolean);
+  return {
+    title: `${siteConfig.name} - ${dict.marketing.seo_title}`,
+    description: dict.marketing.seo_description,
+    keywords,
+    openGraph: {
+      title: `${siteConfig.name} - ${dict.marketing.seo_title}`,
+      description: dict.marketing.seo_description,
+      url: siteConfig.url,
+      siteName: siteConfig.name,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${siteConfig.name} - ${dict.marketing.seo_title}`,
+      description: dict.marketing.seo_description,
+    },
+  };
+}
 
 export default async function IndexPage({
   params: { lang },
@@ -32,10 +65,13 @@ export default async function IndexPage({
           </span>
           <h1 className="max-w-3xl text-balance text-4xl font-semibold tracking-tight md:text-6xl">
             {dict.marketing.title}
-            <span className="text-blue-500">ImagePrompt</span>
+            <span className="text-foreground">ImagePrompt</span>
           </h1>
           <p className="max-w-2xl text-balance text-base text-muted-foreground md:text-lg">
             {dict.marketing.sub_title}
+          </p>
+          <p className="max-w-2xl text-balance text-sm text-muted-foreground md:text-base">
+            {dict.marketing.seo_blurb}
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3">

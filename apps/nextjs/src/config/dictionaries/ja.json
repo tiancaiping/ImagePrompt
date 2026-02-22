@@ -22,6 +22,10 @@
     "introducing": "ImagePrompt の紹介",
     "title": "画像をプロンプトに変換する最短ルート、 ",
     "sub_title": "画像を解析し、被写体・スタイル・ライティング・カメラ情報を抽出して高品質なプロンプトを生成します。",
+    "seo_title": "AI画像→プロンプト生成",
+    "seo_description": "画像を解析し、スタイル・ライティング・構図を含む高品質プロンプトを生成。",
+    "seo_keywords": "画像からプロンプト,プロンプト生成,AIプロンプト,画像プロンプト,stable diffusion プロンプト,midjourney プロンプト,プロンプトエンジニアリング",
+    "seo_blurb": "クリエイター向け画像プロンプト生成プラットフォーム。",
     "get_started": "始める",
     "view_on_github": "例を見る",
     "explore_product": "生成を開始",
@@ -85,7 +89,8 @@
     "signin_others": "または続ける",
     "signup": "サインアップ",
     "privacy": "メールアドレスとプロフィール画像のみが保存されます。",
-    "signup_github": "メールでサインアップ",
+    "signup_google": "Googleで続行",
+    "signup_github": "GitHubで続行",
     "": ""
   },
   "common": {
@@ -114,7 +119,13 @@
       "noSubscription": "どのプランにも登録されていません。",
       "subscriptionInfo": "現在、<strong>{plan}</strong> プランを利用しています。ご登録のサブスクリプションは <strong>{date}</strong> に更新されます。",
       "manage_subscription": "サブスクリプションの管理",
-      "upgrade": "アップグレード"
+      "upgrade": "アップグレード",
+      "usage_title": "利用状況",
+      "usage_total": "合計クラスター",
+      "usage_running": "稼働中",
+      "usage_pending": "処理中",
+      "usage_stopped": "停止",
+      "usage_none": "利用状況はありません"
     },
     "": ""
   },

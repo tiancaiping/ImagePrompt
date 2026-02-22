@@ -14,7 +14,7 @@ import { useSigninModal } from "~/hooks/use-signin-modal";
 
 export const SignInClerkModal = ({ dict }: { dict: Record<string, string> }) => {
   const signInModal = useSigninModal();
-  const [signInClicked, setSignInClicked] = useState(false);
+  const [activeProvider, setActiveProvider] = useState<OAuthStrategy | null>(null);
   const { signIn } = useSignIn() as unknown as {
     signIn?: {
       authenticateWithRedirect: (args: {
@@ -32,11 +32,12 @@ export const SignInClerkModal = ({ dict }: { dict: Record<string, string> }) => 
   const signInWith = (strategy: OAuthStrategy) => {
     const protocol = window.location.protocol
     const host = window.location.host
+    const locale = window.location.pathname.match(/^\/([a-zA-Z]{2})\b/)?.[1] ?? "en"
     return signIn
       .authenticateWithRedirect({
         strategy,
         redirectUrl: '/sign-in/sso-callback',
-        redirectUrlComplete: `${protocol}//${host}/dashboard`,
+        redirectUrlComplete: `${protocol}//${host}/${locale}/dashboard`,
       })
       .then((res) => {
         console.log(res)
@@ -68,18 +69,44 @@ export const SignInClerkModal = ({ dict }: { dict: Record<string, string> }) => 
         <div className="flex flex-col space-y-4 px-4 py-8 md:px-16">
           <Button
             variant="default"
-            disabled={signInClicked}
+            disabled={activeProvider !== null}
             onClick={() => {
-              setSignInClicked(true);
-              void signInWith('oauth_github')
+              setActiveProvider("oauth_google");
+              void signInWith("oauth_google")
                 .then(() => {
                   setTimeout(() => {
                     signInModal.onClose();
                   }, 1000)
                 })
+                .finally(() => {
+                  setActiveProvider(null);
+                })
             }}
           >
-            {signInClicked ? (
+            {activeProvider === "oauth_google" ? (
+              <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Icons.Google className="mr-2 h-4 w-4" />
+            )}{" "}
+            {dict.signup_google}
+          </Button>
+          <Button
+            variant="outline"
+            disabled={activeProvider !== null}
+            onClick={() => {
+              setActiveProvider("oauth_github");
+              void signInWith("oauth_github")
+                .then(() => {
+                  setTimeout(() => {
+                    signInModal.onClose();
+                  }, 1000)
+                })
+                .finally(() => {
+                  setActiveProvider(null);
+                })
+            }}
+          >
+            {activeProvider === "oauth_github" ? (
               <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <Icons.GitHub className="mr-2 h-4 w-4" />

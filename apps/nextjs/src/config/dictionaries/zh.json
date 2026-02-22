@@ -22,6 +22,10 @@
     "introducing": "介绍 ImagePrompt",
     "title": "让图片秒变专业提示词，尽在 ",
     "sub_title": "上传图片，自动提取主体、风格、光影与镜头信息，一键生成高质量提示词。",
+    "seo_title": "AI 图片转提示词生成器",
+    "seo_description": "自动解析图片并生成包含风格、光影、构图的高质量提示词。",
+    "seo_keywords": "图片转提示词,提示词生成,AI提示词,图像提示词,stable diffusion 提示词,midjourney 提示词,提示词工程",
+    "seo_blurb": "面向创作者的图片转提示词平台，快速一致地产出可用提示词。",
     "get_started": "快速开始",
     "view_on_github": "查看示例",
     "explore_product": "开始生成",
@@ -85,7 +89,8 @@
     "signin_others": "或者继续使用",
     "signup": "注册",
     "privacy": "只有您的电子邮件和头像会被存储。",
-    "signup_github": "使用邮箱注册",
+    "signup_google": "使用 Google 继续",
+    "signup_github": "使用 GitHub 继续",
     "": ""
   },
   "common": {
@@ -115,6 +120,12 @@
       "subscriptionInfo": "您目前处于 <strong>{plan}</strong> 计划。您的订阅将在 <strong>{date}</strong> 续订。",
       "manage_subscription": "管理订阅",
       "upgrade": "升级",
+      "usage_title": "用量",
+      "usage_total": "集群总数",
+      "usage_running": "运行中",
+      "usage_pending": "处理中",
+      "usage_stopped": "已停止",
+      "usage_none": "暂无用量数据",
       "": ""
     }
   },

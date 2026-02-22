@@ -22,6 +22,10 @@
     "introducing": "ImagePrompt 소개",
     "title": "이미지를 프롬프트로 빠르게 변환, ",
     "sub_title": "이미지를 분석해 주제, 스타일, 조명, 카메라 정보를 추출하고 고품질 프롬프트를 생성합니다.",
+    "seo_title": "AI 이미지→프롬프트 생성기",
+    "seo_description": "이미지를 분석해 스타일, 조명, 구도를 포함한 고품질 프롬프트 생성.",
+    "seo_keywords": "이미지 프롬프트,프롬프트 생성,AI 프롬프트,이미지→프롬프트,stable diffusion 프롬프트,midjourney 프롬프트,프롬프트 엔지니어링",
+    "seo_blurb": "크리에이터용 이미지 프롬프트 생성 플랫폼.",
     "get_started": "시작하기",
     "view_on_github": "예시 보기",
     "explore_product": "생성 시작",
@@ -85,7 +89,8 @@
     "signin_others": "또는 다음으로 계속",
     "signup": "가입하기",
     "privacy": "이메일과 프로필 사진만 저장됩니다.",
-    "signup_github": "이메일로 가입하기",
+    "signup_google": "Google로 계속",
+    "signup_github": "GitHub로 계속",
     "": ""
   },
   "common": {
@@ -115,6 +120,12 @@
       "subscriptionInfo": "현재 <strong>{plan}</strong> 플랜을 사용 중입니다。구독은 <strong>{date}</strong>에 갱신됩니다。",
       "manage_subscription": "구독 관리",
       "upgrade": "업그레이드",
+      "usage_title": "사용량",
+      "usage_total": "총 클러스터",
+      "usage_running": "실행 중",
+      "usage_pending": "처리 중",
+      "usage_stopped": "중지됨",
+      "usage_none": "사용량 데이터 없음",
       "": ""
     },
     "": ""
