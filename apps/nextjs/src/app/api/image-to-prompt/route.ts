@@ -164,6 +164,77 @@ export async function POST(req: Request) {
     }
   }
 
+  const collectRequiredParams = (value: unknown, acc: Set<string>) => {
+    if (!value) return;
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        collectRequiredParams(item, acc);
+      }
+      return;
+    }
+    if (value && typeof value === "object") {
+      const record = value as Record<string, unknown>;
+      if (record.required === true && typeof record.name === "string") {
+        acc.add(record.name);
+      }
+      if (record.is_required === true && typeof record.name === "string") {
+        acc.add(record.name);
+      }
+      if (Array.isArray(record.required)) {
+        for (const item of record.required) {
+          if (typeof item === "string") acc.add(item);
+        }
+      }
+      const nextKeys = Object.keys(record);
+      for (const key of nextKeys) {
+        collectRequiredParams(record[key], acc);
+      }
+    }
+  };
+  const isEmptyParam = (value: unknown) => {
+    if (value === undefined || value === null) return true;
+    if (typeof value === "string") return value.trim() === "";
+    if (Array.isArray(value)) return value.length === 0;
+    if (typeof value === "object") return Object.keys(value).length === 0;
+    return false;
+  };
+  const requiredFromWorkflow = new Set<string>();
+  let workflowInfo: unknown = null;
+  try {
+    const workflowInfoResponse = await fetch(
+      `${baseUrl}/v1/workflows/${env.COZE_WORKFLOW_ID}`,
+      {
+        headers: {
+          Authorization: `Bearer ${env.COZE_API_TOKEN}`,
+        },
+      },
+    );
+    if (workflowInfoResponse.ok) {
+      workflowInfo = (await workflowInfoResponse.json()) as unknown;
+      collectRequiredParams(workflowInfo, requiredFromWorkflow);
+    }
+  } catch {
+    workflowInfo = null;
+  }
+  if (requiredFromWorkflow.size > 0) {
+    const missing = Array.from(requiredFromWorkflow).filter(
+      (name) => !Object.prototype.hasOwnProperty.call(parameters, name) || isEmptyParam(parameters[name]),
+    );
+    if (missing.length > 0) {
+      return NextResponse.json(
+        {
+          error: `缺少必填参数: ${missing.join(", ")}`,
+          details: {
+            requiredParameters: Array.from(requiredFromWorkflow),
+            providedParameters: parameters,
+            workflowInfo,
+          },
+        },
+        { status: 400 },
+      );
+    }
+  }
+
   const workflowResponse = await fetch(`${baseUrl}/v1/workflow/run`, {
     method: "POST",
     headers: {
