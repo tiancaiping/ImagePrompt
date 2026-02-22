@@ -8,6 +8,7 @@ import { i18n } from "~/config/i18n-config";
 
 const publicRoute = [
   "/(\\w{2}/)?signin(.*)",
+  "/sign-in/sso-callback(.*)",
   "/(\\w{2}/)?terms(.*)",
   "/(\\w{2}/)?privacy(.*)",
   "/(\\w{2}/)?docs(.*)",
@@ -18,7 +19,7 @@ const publicRoute = [
 
 const noNeedProcessRoute = [".*\\.png", ".*\\.jpg", ".*\\.opengraph-image.png"];
 
-const noRedirectRoute = ["/api(.*)", "/trpc(.*)", "/admin"];
+const noRedirectRoute = ["/api(.*)", "/trpc(.*)", "/admin", "/sign-in/sso-callback(.*)"];
 
 function getLocale(request: NextRequest): string | undefined {
   // Negotiator expects plain object so we need to transform headers

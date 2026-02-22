@@ -9,6 +9,12 @@ export async function POST(req: Request) {
       { status: 500 },
     );
   }
+  const allowedPromptTypes = [
+    "midjourney",
+    "stableDiffusion",
+    "flux",
+    "normal",
+  ];
   const formData = await req.formData();
   const file = formData.get("file");
   if (!(file instanceof File)) {
@@ -23,6 +29,14 @@ export async function POST(req: Request) {
     typeof formData.get("promptType") === "string"
       ? String(formData.get("promptType"))
       : "";
+  if (!allowedPromptTypes.includes(promptType)) {
+    return NextResponse.json(
+      {
+        error: `promptType 无效，请选择: ${allowedPromptTypes.join(" / ")}`,
+      },
+      { status: 400 },
+    );
+  }
 
   const baseUrl = env.COZE_API_BASE ?? "https://api.coze.cn";
 
@@ -88,10 +102,42 @@ export async function POST(req: Request) {
       outputs?: unknown;
     };
     output?: unknown;
+    message?: unknown;
+    msg?: unknown;
+    error?: unknown;
+    errors?: unknown;
   };
   if (!workflowResponse.ok) {
+    const extractError = (value: unknown): string | null => {
+      if (!value) return null;
+      if (typeof value === "string") return value;
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          const extracted = extractError(item);
+          if (extracted) return extracted;
+        }
+        return null;
+      }
+      if (value && typeof value === "object") {
+        const record = value as Record<string, unknown>;
+        const direct =
+          record.message ?? record.msg ?? record.error ?? record.description;
+        if (typeof direct === "string") return direct;
+        if (record.errors) {
+          const nested = extractError(record.errors);
+          if (nested) return nested;
+        }
+        for (const key of Object.keys(record)) {
+          const nested = extractError(record[key]);
+          if (nested) return nested;
+        }
+      }
+      return null;
+    };
+    const errorMessage =
+      extractError(workflowJson) ?? "Workflow run failed";
     return NextResponse.json(
-      { error: "Workflow run failed", details: workflowJson },
+      { error: errorMessage, details: workflowJson },
       { status: workflowResponse.status },
     );
   }

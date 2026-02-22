@@ -7,6 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@saasfly/ui/card";
 import * as Icons from "@saasfly/ui/icons";
 import { Input } from "@saasfly/ui/input";
 import { Label } from "@saasfly/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@saasfly/ui/select";
 
 import { DashboardHeader } from "~/components/header";
 import { DashboardShell } from "~/components/shell";
@@ -14,7 +23,7 @@ import { DashboardShell } from "~/components/shell";
 export default function ImageToPromptPage() {
   const [file, setFile] = React.useState<File | null>(null);
   const [userQuery, setUserQuery] = React.useState("");
-  const [promptType, setPromptType] = React.useState("");
+  const [promptType, setPromptType] = React.useState("midjourney");
   const [result, setResult] = React.useState("");
   const [error, setError] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
@@ -133,14 +142,20 @@ export default function ImageToPromptPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="prompt-type">promptType</Label>
-                <Input
-                  id="prompt-type"
-                  placeholder="例如: 写实 / 卡通 / 赛博朋克"
-                  value={promptType}
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-                    setPromptType(event.target.value)
-                  }
-                />
+                <Select value={promptType} onValueChange={setPromptType}>
+                  <SelectTrigger id="prompt-type">
+                    <SelectValue placeholder="请选择提示词类型" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Prompt Type</SelectLabel>
+                      <SelectItem value="midjourney">midjourney</SelectItem>
+                      <SelectItem value="stableDiffusion">stableDiffusion</SelectItem>
+                      <SelectItem value="flux">flux</SelectItem>
+                      <SelectItem value="normal">normal</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </div>
               <Button type="submit" disabled={!file || isLoading}>
                 {isLoading && (
