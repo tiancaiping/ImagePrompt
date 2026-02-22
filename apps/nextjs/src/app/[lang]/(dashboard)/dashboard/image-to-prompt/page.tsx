@@ -26,6 +26,7 @@ export default function ImageToPromptPage() {
   const [promptType, setPromptType] = React.useState("midjourney");
   const [result, setResult] = React.useState("");
   const [error, setError] = React.useState("");
+  const [errorDetails, setErrorDetails] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
   const [fileId, setFileId] = React.useState("");
   const [fileUrl, setFileUrl] = React.useState("");
@@ -54,6 +55,7 @@ export default function ImageToPromptPage() {
     }
     setIsLoading(true);
     setError("");
+    setErrorDetails("");
     setResult("");
     setFileId("");
     setFileUrl("");
@@ -69,6 +71,7 @@ export default function ImageToPromptPage() {
       });
       const data = (await response.json()) as {
         error?: string;
+        details?: unknown;
         output?: unknown;
         fileId?: string;
         fileUrl?: string;
@@ -76,6 +79,12 @@ export default function ImageToPromptPage() {
       };
       if (!response.ok) {
         setError(data?.error ?? "请求失败");
+        const details = data?.details ?? data;
+        const nextDetails =
+          typeof details === "string"
+            ? details
+            : JSON.stringify(details, null, 2);
+        setErrorDetails(nextDetails);
         return;
       }
       const output = data?.output;
@@ -184,7 +193,12 @@ export default function ImageToPromptPage() {
         ) : null}
         {error ? (
           <div className="rounded-md border border-destructive bg-destructive/5 p-4 text-sm text-destructive">
-            {error}
+            <div>{error}</div>
+            {errorDetails ? (
+              <div className="mt-2 whitespace-pre-wrap text-xs text-destructive/80">
+                {errorDetails}
+              </div>
+            ) : null}
           </div>
         ) : null}
         {result ? (
