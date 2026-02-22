@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-
 import { env } from "~/env.mjs";
+
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   if (!env.COZE_API_TOKEN || !env.COZE_WORKFLOW_ID) {
@@ -9,12 +10,7 @@ export async function POST(req: Request) {
       { status: 500 },
     );
   }
-  const allowedPromptTypes = [
-    "midjourney",
-    "stableDiffusion",
-    "flux",
-    "normal",
-  ];
+
   const formData = await req.formData();
   const file = formData.get("file");
   if (!(file instanceof File)) {
@@ -25,22 +21,37 @@ export async function POST(req: Request) {
     typeof formData.get("userQuery") === "string"
       ? String(formData.get("userQuery"))
       : "";
+
   const promptType =
     typeof formData.get("promptType") === "string"
-      ? String(formData.get("promptType"))
+      ? String(formData.get("promptType")).trim()
       : "";
+
+  const allowedPromptTypes = ["midjourney", "stableDiffusion", "flux", "normal"];
+  if (!allowedPromptTypes.includes(promptType)) {
+    return NextResponse.json(
+      {
+        error: `promptType 无效，请选择: ${allowedPromptTypes.join(" / ")}`,
+      },
+      { status: 400 },
+    );
+  }
+
   const botId =
     typeof formData.get("botId") === "string"
       ? String(formData.get("botId")).trim()
       : env.COZE_BOT_ID ?? "";
+
   const appId =
     typeof formData.get("appId") === "string"
       ? String(formData.get("appId")).trim()
       : env.COZE_APP_ID ?? "";
+
   const extraParametersRaw =
     typeof formData.get("extraParameters") === "string"
       ? String(formData.get("extraParameters")).trim()
       : "";
+
   let extraParameters: Record<string, unknown> = {};
   if (extraParametersRaw) {
     try {
@@ -59,19 +70,12 @@ export async function POST(req: Request) {
       );
     }
   }
-  if (!allowedPromptTypes.includes(promptType)) {
-    return NextResponse.json(
-      {
-        error: `promptType 无效，请选择: ${allowedPromptTypes.join(" / ")}`,
-      },
-      { status: 400 },
-    );
-  }
 
   const baseUrl = env.COZE_API_BASE ?? "https://api.coze.cn";
 
   const uploadForm = new FormData();
   uploadForm.append("file", file, file.name);
+
   const uploadResponse = await fetch(`${baseUrl}/v1/files/upload`, {
     method: "POST",
     headers: {
@@ -79,16 +83,14 @@ export async function POST(req: Request) {
     },
     body: uploadForm,
   });
+
   const uploadJson = (await uploadResponse.json()) as {
-    data?: {
-      id?: string;
-      file_id?: string;
-      file_url?: string;
-    };
+    data?: { id?: string; file_id?: string; file_url?: string };
     file_id?: string;
     id?: string;
     file_url?: string;
   };
+
   if (!uploadResponse.ok) {
     return NextResponse.json(
       { error: "File upload failed", details: uploadJson },
@@ -102,145 +104,29 @@ export async function POST(req: Request) {
     uploadJson?.file_id ??
     uploadJson?.id ??
     null;
+
   const fileUrl = uploadJson?.data?.file_url ?? uploadJson?.file_url ?? null;
-  const parameters: Record<string, unknown> = {
-    userQuery,
-    promptType,
-  };
-  const setParam = (key: string, value: unknown) => {
-    if (value === undefined || value === null) return;
-    if (typeof value === "string" && !value.trim()) return;
-    if (Object.prototype.hasOwnProperty.call(parameters, key)) return;
-    parameters[key] = value;
-  };
-  if (fileId) {
-    setParam("file_id", String(fileId));
-    setParam("image", String(fileId));
-    setParam("img", { file_id: String(fileId) });
-    setParam("image_file", String(fileId));
-    setParam("file", String(fileId));
-  }
-  if (fileUrl) {
-    setParam("file_url", String(fileUrl));
-    setParam("image_url", String(fileUrl));
-    setParam("url", String(fileUrl));
-  }
-  if (!fileId && fileUrl) {
-    setParam("img", { file_url: String(fileUrl) });
-  }
-  if (!fileId && fileUrl) {
-    setParam("img", String(fileUrl));
-  }
-  if (userQuery) {
-    setParam("query", userQuery);
-    setParam("user_query", userQuery);
-  }
-  if (promptType) {
-    setParam("prompt_type", promptType);
-  }
-  const resolvePlaceholders = (value: unknown): unknown => {
-    if (typeof value === "string") {
-      let next = value;
-      if (fileId) {
-        next = next.replaceAll("{{file_id}}", String(fileId));
-        next = next.replaceAll("{file_id}", String(fileId));
-        next = next.replaceAll("$file_id", String(fileId));
-        if (next === "file_id") next = String(fileId);
-      }
-      if (fileUrl) {
-        next = next.replaceAll("{{file_url}}", String(fileUrl));
-        next = next.replaceAll("{file_url}", String(fileUrl));
-        next = next.replaceAll("$file_url", String(fileUrl));
-        if (next === "file_url") next = String(fileUrl);
-      }
-      return next;
-    }
-    if (Array.isArray(value)) {
-      return value.map((item) => resolvePlaceholders(item));
-    }
-    if (value && typeof value === "object") {
-      const entries = Object.entries(value as Record<string, unknown>).map(
-        ([key, entry]) => [key, resolvePlaceholders(entry)] as const,
-      );
-      return Object.fromEntries(entries);
-    }
-    return value;
-  };
-  if (Object.keys(extraParameters).length) {
-    for (const [key, value] of Object.entries(extraParameters)) {
-      parameters[key] = resolvePlaceholders(value);
-    }
+
+  if (!fileId && !fileUrl) {
+    return NextResponse.json(
+      { error: "Upload succeeded but no file_id/file_url returned", details: uploadJson },
+      { status: 500 },
+    );
   }
 
-  const collectRequiredParams = (value: unknown, acc: Set<string>) => {
-    if (!value) return;
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        collectRequiredParams(item, acc);
-      }
-      return;
-    }
-    if (value && typeof value === "object") {
-      const record = value as Record<string, unknown>;
-      if (record.required === true && typeof record.name === "string") {
-        acc.add(record.name);
-      }
-      if (record.is_required === true && typeof record.name === "string") {
-        acc.add(record.name);
-      }
-      if (Array.isArray(record.required)) {
-        for (const item of record.required) {
-          if (typeof item === "string") acc.add(item);
-        }
-      }
-      const nextKeys = Object.keys(record);
-      for (const key of nextKeys) {
-        collectRequiredParams(record[key], acc);
-      }
-    }
+  const parameters: Record<string, unknown> = {
+    promptType,
+    userQuery,
+    ...extraParameters,
   };
-  const isEmptyParam = (value: unknown) => {
-    if (value === undefined || value === null) return true;
-    if (typeof value === "string") return value.trim() === "";
-    if (Array.isArray(value)) return value.length === 0;
-    if (typeof value === "object") return Object.keys(value).length === 0;
-    return false;
-  };
-  const requiredFromWorkflow = new Set<string>();
-  let workflowInfo: unknown = null;
-  try {
-    const workflowInfoResponse = await fetch(
-      `${baseUrl}/v1/workflows/${env.COZE_WORKFLOW_ID}`,
-      {
-        headers: {
-          Authorization: `Bearer ${env.COZE_API_TOKEN}`,
-        },
-      },
-    );
-    if (workflowInfoResponse.ok) {
-      workflowInfo = (await workflowInfoResponse.json()) as unknown;
-      collectRequiredParams(workflowInfo, requiredFromWorkflow);
-    }
-  } catch {
-    workflowInfo = null;
-  }
-  if (requiredFromWorkflow.size > 0) {
-    const missing = Array.from(requiredFromWorkflow).filter(
-      (name) => !Object.prototype.hasOwnProperty.call(parameters, name) || isEmptyParam(parameters[name]),
-    );
-    if (missing.length > 0) {
-      return NextResponse.json(
-        {
-          error: `缺少必填参数: ${missing.join(", ")}`,
-          details: {
-            requiredParameters: Array.from(requiredFromWorkflow),
-            providedParameters: parameters,
-            workflowInfo,
-          },
-        },
-        { status: 400 },
-      );
-    }
+
+  parameters.promptType = promptType;
+  parameters.userQuery = userQuery;
+
+  if (fileId) {
+    parameters.img = { file_id: String(fileId) };
+  } else {
+    parameters.img = { file_url: String(fileUrl) };
   }
 
   const workflowResponse = await fetch(`${baseUrl}/v1/workflow/run`, {
@@ -256,18 +142,16 @@ export async function POST(req: Request) {
       app_id: appId || undefined,
     }),
   });
+
   const workflowJson = (await workflowResponse.json()) as {
-    data?: {
-      output?: unknown;
-      result?: unknown;
-      outputs?: unknown;
-    };
+    data?: { output?: unknown; result?: unknown; outputs?: unknown };
     output?: unknown;
     message?: unknown;
     msg?: unknown;
     error?: unknown;
     errors?: unknown;
   };
+
   if (!workflowResponse.ok) {
     const extractError = (value: unknown): string | null => {
       if (!value) return null;
@@ -295,29 +179,22 @@ export async function POST(req: Request) {
       }
       return null;
     };
-    const rawErrorText = JSON.stringify(workflowJson);
-    const missingParams = new Set<string>();
-    for (const match of rawErrorText.matchAll(/parameters?\.([a-zA-Z0-9_]+)/g)) {
-      missingParams.add(match[1]);
-    }
-    const listMatch = rawErrorText.match(
-      /missing required parameters?:?\s*([a-zA-Z0-9_,\s]+)/i,
-    );
-    if (listMatch?.[1]) {
-      listMatch[1]
-        .split(/[,\s]+/)
-        .map((value) => value.trim())
-        .filter(Boolean)
-        .forEach((value) => missingParams.add(value));
-    }
-    const missingText =
-      missingParams.size > 0
-        ? `缺少必填参数: ${Array.from(missingParams).join(", ")}`
-        : null;
-    const errorMessage =
-      missingText ?? extractError(workflowJson) ?? "Workflow run failed";
+
     return NextResponse.json(
-      { error: errorMessage, details: workflowJson },
+      {
+        error: extractError(workflowJson) ?? "Workflow run failed",
+        details: {
+          response: workflowJson,
+          requestPayload: {
+            workflow_id: env.COZE_WORKFLOW_ID,
+            parameters,
+            bot_id: botId || undefined,
+            app_id: appId || undefined,
+          },
+          fileId,
+          fileUrl,
+        },
+      },
       { status: workflowResponse.status },
     );
   }
@@ -328,135 +205,35 @@ export async function POST(req: Request) {
     workflowJson?.data?.result ??
     workflowJson?.data?.outputs ??
     null;
-  const parseJsonIfString = (value: unknown): unknown => {
-    if (typeof value !== "string") {
-      return null;
-    }
-    try {
-      const parsed: unknown = JSON.parse(value);
-      return parsed;
-    } catch {
-      return null;
-    }
-  };
-  const extractFromObject = (value: Record<string, unknown>): string | null => {
-    if (typeof value.output === "string") return value.output;
-    if (typeof value.text === "string") return value.text;
-    if (typeof value.value === "string") return value.value;
-    const nested = value.output ?? value.data ?? value.result ?? value.outputs;
-    if (typeof nested === "string") return nested;
-    if (nested && typeof nested === "object") {
-      return extractFromObject(nested as Record<string, unknown>);
-    }
-    return null;
-  };
-  const extractFromArray = (value: unknown[]): string | null => {
-    for (const item of value) {
-      if (typeof item === "string") return item;
-      if (item && typeof item === "object") {
-        const extracted = extractFromObject(item as Record<string, unknown>);
-        if (typeof extracted === "string") return extracted;
-      }
-    }
-    return null;
-  };
-  const findFirstString = (value: unknown, depth = 0): string | null => {
+
+  const extractText = (value: unknown, depth = 0): string | null => {
     if (depth > 6) return null;
     if (typeof value === "string") return value;
     if (Array.isArray(value)) {
       for (const item of value) {
-        const found = findFirstString(item, depth + 1);
+        const found = extractText(item, depth + 1);
         if (found) return found;
       }
       return null;
     }
     if (value && typeof value === "object") {
       const record = value as Record<string, unknown>;
-      const priorityKeys = ["output", "text", "content", "value", "prompt", "result"];
-      for (const key of priorityKeys) {
+      const keys = ["output", "text", "content", "value", "prompt", "result"];
+      for (const key of keys) {
         if (typeof record[key] === "string") return record[key] as string;
       }
       for (const key of Object.keys(record)) {
-        const found = findFirstString(record[key], depth + 1);
+        const found = extractText(record[key], depth + 1);
         if (found) return found;
       }
     }
     return null;
   };
-  const collectStrings = (
-    value: unknown,
-    depth = 0,
-    acc: Set<string> = new Set(),
-  ): Set<string> => {
-    if (depth > 6) return acc;
-    if (typeof value === "string") {
-      acc.add(value);
-      return acc;
-    }
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        collectStrings(item, depth + 1, acc);
-      }
-      return acc;
-    }
-    if (value && typeof value === "object") {
-      const record = value as Record<string, unknown>;
-      for (const key of Object.keys(record)) {
-        collectStrings(record[key], depth + 1, acc);
-      }
-    }
-    return acc;
-  };
-  const isLikelyId = (value: string) => {
-    if (value.length < 12) return false;
-    if (/^[0-9a-f]{16,}$/i.test(value)) return true;
-    if (/^[0-9a-f-]{20,}$/i.test(value) && !value.includes(" ")) return true;
-    return false;
-  };
-  const scoreString = (value: string) => {
-    let score = 0;
-    if (value.includes(" ")) score += 3;
-    if (value.length >= 30) score += 2;
-    if (/[a-zA-Z]/.test(value)) score += 1;
-    if (/[\u4e00-\u9fa5]/.test(value)) score += 2;
-    if (/[,.!?，。！？]/.test(value)) score += 1;
-    if (isLikelyId(value)) score -= 10;
-    return score;
-  };
-  const parsedOutput = parseJsonIfString(rawOutput);
-  const fallbackParsed = parseJsonIfString(workflowJson);
-  const stringOutput = typeof rawOutput === "string" ? rawOutput : null;
-  const parsedObjectOutput =
-    parsedOutput && typeof parsedOutput === "object"
-      ? extractFromObject(parsedOutput as Record<string, unknown>)
-      : null;
-  const arrayOutput = Array.isArray(rawOutput) ? extractFromArray(rawOutput) : null;
-  const objectOutput =
-    rawOutput && typeof rawOutput === "object"
-      ? extractFromObject(rawOutput as Record<string, unknown>)
-      : null;
-  const fallbackOutput =
-    fallbackParsed && typeof fallbackParsed === "object"
-      ? extractFromObject(fallbackParsed as Record<string, unknown>)
-      : null;
-  const candidates = [
-    stringOutput,
-    parsedObjectOutput,
-    arrayOutput,
-    objectOutput,
-    fallbackOutput,
-    findFirstString(rawOutput),
-    findFirstString(workflowJson),
-    ...Array.from(collectStrings(rawOutput)),
-    ...Array.from(collectStrings(workflowJson)),
-  ].filter(
-    (value): value is string => typeof value === "string" && value.trim() !== "",
-  );
-  const best = candidates.reduce((acc, current) => {
-    if (!acc) return current;
-    return scoreString(current) > scoreString(acc) ? current : acc;
-  }, "");
-  const output = best || null;
+  const output =
+    extractText(rawOutput) ??
+    extractText(workflowJson) ??
+    (rawOutput ? JSON.stringify(rawOutput) : JSON.stringify(workflowJson));
+
   return NextResponse.json({
     output,
     fileId,
