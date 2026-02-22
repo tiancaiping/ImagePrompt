@@ -107,15 +107,16 @@ export async function POST(req: Request) {
     userQuery,
     promptType,
   };
-  const setParam = (key: string, value: string | null) => {
-    if (!value) return;
+  const setParam = (key: string, value: unknown) => {
+    if (value === undefined || value === null) return;
+    if (typeof value === "string" && !value.trim()) return;
     if (Object.prototype.hasOwnProperty.call(parameters, key)) return;
-    parameters[key] = String(value);
+    parameters[key] = value;
   };
   if (fileId) {
     setParam("file_id", String(fileId));
     setParam("image", String(fileId));
-    setParam("img", String(fileId));
+    setParam("img", { file_id: String(fileId) });
     setParam("image_file", String(fileId));
     setParam("file", String(fileId));
   }
@@ -123,6 +124,12 @@ export async function POST(req: Request) {
     setParam("file_url", String(fileUrl));
     setParam("image_url", String(fileUrl));
     setParam("url", String(fileUrl));
+  }
+  if (!fileId && fileUrl) {
+    setParam("img", { file_url: String(fileUrl) });
+  }
+  if (!fileId && fileUrl) {
+    setParam("img", String(fileUrl));
   }
   if (userQuery) {
     setParam("query", userQuery);
