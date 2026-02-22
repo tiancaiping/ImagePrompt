@@ -7,11 +7,10 @@ settings:
 importers:
 
   .:
-    dependencies:
+    devDependencies:
       '@clerk/nextjs':
         specifier: 6.38.0
         version: 6.38.0(next@14.2.5(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-    devDependencies:
       '@manypkg/cli':
         specifier: ^0.25.1
         version: 0.25.1
