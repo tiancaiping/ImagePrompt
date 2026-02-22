@@ -15,6 +15,8 @@ export const env = createEnv({
     COZE_API_TOKEN: z.string().min(1).optional(),
     COZE_WORKFLOW_ID: z.string().min(1).optional(),
     COZE_API_BASE: z.string().url().optional(),
+    COZE_BOT_ID: z.string().min(1).optional(),
+    COZE_APP_ID: z.string().min(1).optional(),
   },
   client: {
     NEXT_PUBLIC_APP_URL: z.string().min(1),
@@ -37,6 +39,8 @@ export const env = createEnv({
     COZE_API_TOKEN: process.env.COZE_API_TOKEN,
     COZE_WORKFLOW_ID: process.env.COZE_WORKFLOW_ID,
     COZE_API_BASE: process.env.COZE_API_BASE,
+    COZE_BOT_ID: process.env.COZE_BOT_ID,
+    COZE_APP_ID: process.env.COZE_APP_ID,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_STRIPE_PRO_PRODUCT_ID:
       process.env.NEXT_PUBLIC_STRIPE_PRO_PRODUCT_ID,

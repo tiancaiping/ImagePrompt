@@ -29,6 +29,14 @@ export async function POST(req: Request) {
     typeof formData.get("promptType") === "string"
       ? String(formData.get("promptType"))
       : "";
+  const botId =
+    typeof formData.get("botId") === "string"
+      ? String(formData.get("botId")).trim()
+      : env.COZE_BOT_ID ?? "";
+  const appId =
+    typeof formData.get("appId") === "string"
+      ? String(formData.get("appId")).trim()
+      : env.COZE_APP_ID ?? "";
   const extraParametersRaw =
     typeof formData.get("extraParameters") === "string"
       ? String(formData.get("extraParameters")).trim()
@@ -165,6 +173,8 @@ export async function POST(req: Request) {
     body: JSON.stringify({
       workflow_id: env.COZE_WORKFLOW_ID,
       parameters,
+      bot_id: botId || undefined,
+      app_id: appId || undefined,
     }),
   });
   const workflowJson = (await workflowResponse.json()) as {

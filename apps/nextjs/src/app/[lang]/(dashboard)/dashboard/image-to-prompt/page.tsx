@@ -24,6 +24,8 @@ export default function ImageToPromptPage() {
   const [file, setFile] = React.useState<File | null>(null);
   const [userQuery, setUserQuery] = React.useState("");
   const [promptType, setPromptType] = React.useState("midjourney");
+  const [botId, setBotId] = React.useState("");
+  const [appId, setAppId] = React.useState("");
   const [extraParameters, setExtraParameters] = React.useState("");
   const [result, setResult] = React.useState("");
   const [error, setError] = React.useState("");
@@ -65,6 +67,12 @@ export default function ImageToPromptPage() {
       body.append("file", file);
       body.append("userQuery", userQuery);
       body.append("promptType", promptType);
+      if (botId.trim()) {
+        body.append("botId", botId.trim());
+      }
+      if (appId.trim()) {
+        body.append("appId", appId.trim());
+      }
       if (extraParameters.trim()) {
         body.append("extraParameters", extraParameters.trim());
       }
@@ -169,6 +177,28 @@ export default function ImageToPromptPage() {
                     </SelectGroup>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="bot-id">botId</Label>
+                <Input
+                  id="bot-id"
+                  placeholder="仅工作流需要关联智能体时填写"
+                  value={botId}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                    setBotId(event.target.value)
+                  }
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="app-id">appId</Label>
+                <Input
+                  id="app-id"
+                  placeholder="仅工作流需要 app_id 时填写"
+                  value={appId}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                    setAppId(event.target.value)
+                  }
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="extra-params">extraParameters</Label>
