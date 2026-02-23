@@ -11,69 +11,19 @@ interface UploadJson {
 }
 
 interface WorkflowRunJson {
-  data?: {
-    output?: unknown;
-    result?: unknown;
-    outputs?: unknown;
-  };
+  code?: number;
+  msg?: string;
+  data?: unknown; // ✅ 真实返回里 data 是 string
+  debug_url?: string;
+  execute_id?: string;
+  detail?: unknown;
+  usage?: unknown;
+
+  // 兼容字段
   output?: unknown;
   message?: unknown;
-  msg?: unknown;
   error?: unknown;
   errors?: unknown;
-}
-
-// 只从“可信结构”提取 output，避免把 run_id/trace_id 误当输出
-function pickWorkflowOutput(raw: unknown): string | null {
-  if (!raw) return null;
-
-  if (typeof raw === "string") {
-    const s = raw.trim();
-    if (!s) return null;
-    if (s.startsWith("{") || s.startsWith("[")) {
-      try {
-        const parsed = JSON.parse(s) as unknown;
-        const nested = pickWorkflowOutput(parsed);
-        if (nested) return nested;
-      } catch {
-        return s;
-      }
-    }
-    return s;
-  }
-
-  // 常见对象结构：{ output: "xxx" } / { text: "xxx" } / { content: "xxx" }
-  if (raw && typeof raw === "object") {
-    const obj = raw as Record<string, unknown>;
-
-    const directKeys = ["output", "text", "content", "value", "prompt", "result"];
-    for (const k of directKeys) {
-      if (typeof obj[k] === "string" && (obj[k] as string).trim()) {
-        return (obj[k] as string).trim();
-      }
-    }
-
-    // 常见：outputs: [{ name: "...", value: "..." }]
-    if (Array.isArray(obj.outputs)) {
-      for (const item of obj.outputs) {
-        if (item && typeof item === "object") {
-          const it = item as Record<string, unknown>;
-          if (typeof it.value === "string" && it.value.trim()) return it.value.trim();
-          if (typeof it.output === "string" && it.output.trim()) return it.output.trim();
-          if (typeof it.text === "string" && it.text.trim()) return it.text.trim();
-        }
-      }
-    }
-
-    // 有些会嵌一层 data/result/output
-    const nested = obj.data ?? obj.result ?? obj.output;
-    if (nested && nested !== raw) {
-      const v = pickWorkflowOutput(nested);
-      if (v) return v;
-    }
-  }
-
-  return null;
 }
 
 function extractErrorMessage(value: unknown): string | null {
@@ -108,8 +58,37 @@ function extractErrorMessage(value: unknown): string | null {
   return null;
 }
 
+// ✅ 只从 workflowJson.data（JSON字符串）里提取 output
+function extractOutputFromCozeData(data: unknown): string | null {
+  if (typeof data === "string") {
+    try {
+      const parsed = JSON.parse(data) as unknown;
+      if (parsed && typeof parsed === "object") {
+        const obj = parsed as Record<string, unknown>;
+        if (typeof obj.output === "string" && obj.output.trim()) return obj.output.trim();
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  if (data && typeof data === "object") {
+    const obj = data as Record<string, unknown>;
+    if (typeof obj.output === "string" && obj.output.trim()) return obj.output.trim();
+  }
+
+  return null;
+}
+
+function toShortOutput(value: string | null): string | null {
+  if (!value) return null;
+  const compact = value.replace(/\s+/g, " ").trim();
+  const maxLength = 200;
+  if (compact.length <= maxLength) return compact;
+  return `${compact.slice(0, maxLength).trimEnd()}...`;
+}
+
 export async function POST(req: Request) {
-  // 0) 必要环境变量
   if (!env.COZE_API_TOKEN || !env.COZE_WORKFLOW_ID) {
     return NextResponse.json(
       { error: "Missing Coze configuration" },
@@ -119,25 +98,20 @@ export async function POST(req: Request) {
 
   const baseUrl = env.COZE_API_BASE ?? "https://api.coze.cn";
 
-  // 1) 读取表单
   const formData = await req.formData();
-
   const file = formData.get("file");
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Missing file" }, { status: 400 });
   }
 
   const userQuery =
-    typeof formData.get("userQuery") === "string"
-      ? String(formData.get("userQuery"))
-      : "";
+    typeof formData.get("userQuery") === "string" ? String(formData.get("userQuery")) : "";
 
   const promptType =
     typeof formData.get("promptType") === "string"
       ? String(formData.get("promptType")).trim()
       : "";
 
-  // 你的工作流开始节点必填 promptType，所以这里也必须校验
   const allowedPromptTypes = ["midjourney", "stableDiffusion", "flux", "normal"];
   if (!allowedPromptTypes.includes(promptType)) {
     return NextResponse.json(
@@ -156,7 +130,6 @@ export async function POST(req: Request) {
       ? String(formData.get("appId")).trim()
       : env.COZE_APP_ID ?? "";
 
-  // extraParameters（可选 JSON 对象）
   const extraParametersRaw =
     typeof formData.get("extraParameters") === "string"
       ? String(formData.get("extraParameters")).trim()
@@ -174,27 +147,21 @@ export async function POST(req: Request) {
       }
       extraParameters = parsed as Record<string, unknown>;
     } catch {
-      return NextResponse.json(
-        { error: "extraParameters JSON 无效" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "extraParameters JSON 无效" }, { status: 400 });
     }
   }
 
-  // 2) 上传文件 -> file_id / file_url
+  // 1) upload
   const uploadForm = new FormData();
   uploadForm.append("file", file, file.name);
 
   const uploadResponse = await fetch(`${baseUrl}/v1/files/upload`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.COZE_API_TOKEN}`,
-    },
+    headers: { Authorization: `Bearer ${env.COZE_API_TOKEN}` },
     body: uploadForm,
   });
 
   const uploadJson = (await uploadResponse.json()) as UploadJson;
-
   if (!uploadResponse.ok) {
     return NextResponse.json(
       { error: "File upload failed", details: uploadJson },
@@ -218,23 +185,18 @@ export async function POST(req: Request) {
     );
   }
 
-  // 3) 组装 workflow parameters（严格对齐开始节点：img、promptType、userQuery）
-  // ✅ 关键：img 用 JSON 字符串传（最稳），避免 Coze 判定“缺少图片参数”
-  const parameters: Record<string, unknown> = {
-    ...extraParameters, // 允许加别的，但不能覆盖必填
-  };
-
-  // 强制必填/标准字段
+  // 2) workflow run parameters (start node: img, promptType, userQuery)
+  const parameters: Record<string, unknown> = { ...extraParameters };
   parameters.promptType = promptType;
   parameters.userQuery = userQuery;
 
+  // ✅ img 用 JSON 字符串（Coze最稳）
   if (fileId) {
     parameters.img = JSON.stringify({ file_id: String(fileId) });
   } else {
     parameters.img = JSON.stringify({ file_url: String(fileUrl) });
   }
 
-  // 4) 调用 workflow run
   const workflowResponse = await fetch(`${baseUrl}/v1/workflow/run`, {
     method: "POST",
     headers: {
@@ -271,18 +233,13 @@ export async function POST(req: Request) {
     );
   }
 
-  // 5) 只从“可信字段”取输出，避免拿到 trace_id/run_id
-  const rawOutput =
-    workflowJson?.data?.output ??
-    workflowJson?.output ??
-    workflowJson?.data?.result ??
-    workflowJson?.data?.outputs ??
-    null;
-
-  const output = pickWorkflowOutput(rawOutput);
+  // ✅ 只提取 data 里的 output
+  const output =
+    extractOutputFromCozeData(workflowJson.data) ??
+    (typeof workflowJson.output === "string" ? workflowJson.output : null);
 
   return NextResponse.json({
-    output,     // 这里应该是 prompt 文本
+    output: toShortOutput(output),
     fileId,
     fileUrl,
     raw: workflowJson,
