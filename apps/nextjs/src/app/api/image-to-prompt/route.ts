@@ -80,14 +80,6 @@ function extractOutputFromCozeData(data: unknown): string | null {
   return null;
 }
 
-function toShortOutput(value: string | null): string | null {
-  if (!value) return null;
-  const compact = value.replace(/\s+/g, " ").trim();
-  const maxLength = 200;
-  if (compact.length <= maxLength) return compact;
-  return `${compact.slice(0, maxLength).trimEnd()}...`;
-}
-
 export async function POST(req: Request) {
   if (!env.COZE_API_TOKEN || !env.COZE_WORKFLOW_ID) {
     return NextResponse.json(
@@ -239,7 +231,7 @@ export async function POST(req: Request) {
     (typeof workflowJson.output === "string" ? workflowJson.output : null);
 
   return NextResponse.json({
-    output: toShortOutput(output),
+    output,
     fileId,
     fileUrl,
     raw: workflowJson,
