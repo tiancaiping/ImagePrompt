@@ -29,7 +29,17 @@ function pickWorkflowOutput(raw: unknown): string | null {
 
   if (typeof raw === "string") {
     const s = raw.trim();
-    return s ? s : null;
+    if (!s) return null;
+    if (s.startsWith("{") || s.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(s) as unknown;
+        const nested = pickWorkflowOutput(parsed);
+        if (nested) return nested;
+      } catch {
+        return s;
+      }
+    }
+    return s;
   }
 
   // 常见对象结构：{ output: "xxx" } / { text: "xxx" } / { content: "xxx" }
